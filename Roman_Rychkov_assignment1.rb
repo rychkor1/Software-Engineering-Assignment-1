@@ -2,59 +2,56 @@
 #Description: Project to sort students into FYS courses based on their top 6 choices, without overloading classes
 #Filename: Roman_Rychkov_assignment1.rb
 #File Description: main file for the project, which contains everything needed, other than Input/Output files
-#Last Modified on: 9/23/2021
+#Last Modified on: 10/24/2021
 
 require 'csv' #ruby gem needed to read csv
 
 #Making a class for courses to fill in new objects with data from the input
 class Course
-    @@max_size = 18
-    attr_accessor :course_id, :course_num, :course_title
+    @@max_size = 18 #max size of the courses
+    attr_accessor :course_id, :course_num, :course_title, :students
     def initialize(course_id, course_num, course_title)
         @course_id = course_id
         @course_num = course_num
         @course_title = course_title
-        @students = [] #keeps track of student ids in the course
+        @students = [] #keeps track of student ids in the course and puts in array
     end
 
-    def course_size_out #gets course_size
-        return @course_size
-    end
-
-    def add_to_size #adds to the course_size
-        @course_size += 1
-    end
-
-    def students_out #gets the string version of the array of student ids
-        return (@students).join(", ")
-    end #iterate through array in ruby, for each, << to output
-
-    def add_student(student_id) #outputs the student id's array in the form of a string
-        if course_size < max_size
-            @students << student_id
+    def add_student(student) #adds the student to the course if the max size of the class is not reached
+        if size() < @@max_size
+            @students << student.student_id
+            student.enroll(@course_id) #enroll the student to the course
             return true
+        end
         return false
+    end  
+
+    def size() #the size of the class based on how many students are in the class
+        return @students.length()
     end
-    
 end
 
 #Making a class for student to fill in new objects with data from the input
 class Student
-    attr_accessor :student_id
+    attr_accessor :student_id, :choices, :course_id
     def initialize(student_id)
-        @student_id = student_id #leave as integers not convert to strings
-        @choices = [] #choice array
-        @course_id = nil
+        @student_id = student_id 
+        @choices = [] #choice array for student's choice ids
+        @course_id = nil #student's course id is nil until chosen
     end
 
-    def add_choice(course_id)
+    def add_choice(course_id) #put course id of the choice into the choices array
         @choices << course_id
+    end
+
+    def enroll(course_id) #enroll the student by attaching the student's course id to the true course id
+        @course_id = course_id
     end
 end
 
 #Get the program ready to intake input from the user and the input files
 puts "Enter the number of FYS courses being offered: "
-num_courses = gets.to_i #chomp gets rid of the newline after the gets
+num_courses = gets.to_i 
 
 puts "Enter the number of students in the incoming class: "
 num_students = gets.to_i
@@ -65,12 +62,18 @@ while f == 1 #switches to 0 if correct file to break from loop
     input1 = gets.chomp
     if File.file?(input1)
         course_array = CSV.parse(File.read(input1), headers: true) #properly reads through the csv file and populates course_array
-        course_map = {}
-        for course in course_array
-            course_id = course[0]
-            course_map[course_id] = Course.new(course[0].to_i, course[1].to_s, course[2].to_s)
+        course_map = {} #the map holding keys of the course id
+        for course in course_array #going through parsed array
+            if course_map.size() < num_courses #to not parse through beyond the user's input value
+                course_id = course[0].to_i
+                course_num = course[1].to_s
+                course_title = course[2].to_s
+                course_map[course_id] = Course.new(course_id, course_num, course_title) #create course object and map
+            else
+                break #break out of parsing
+            end
+        end
         f = 0 #exits the loop as it found the correct file
-        break #not needed
     else
         puts "Wrong file name, try again \n"
     end
@@ -82,40 +85,52 @@ while f == 1 #switches to 0 if correct file to break from loop
     input2 = gets.chomp
     if File.file?(input2)
         student_array = CSV.parse(File.read(input2), headers: true) #properly reads through the csv file and populates student_array
-        student_map = {}
-        for student in student_array
-            student_id = student[0]
-            if student_id in student_map
-                course_id = student[1]
-                if course_id in course_map
-                    student_map[student_id].add_choice(course_id) #write function for add_course    
-            else
-                student_map[student_id] = Student.new(student[0].to_i)
+        student_map = {} #the map holding the keys of student id
+        for student in student_array #going through parsed array
+            if student_map.size() >= num_students #to not parse through beyond the user's input value
+                break
             end
+            student_id = student[0].to_i 
+            if !student_map.key?(student_id) #making the keys for the map to store student's id
+                student_map[student_id] = Student.new(student_id) #create student object and map
+            end
+            course_id = student[1].to_i
+            if course_map.key?(course_id) #making the keys for the map to store student's course id
+                student_map[student_id].add_choice(course_id) #add choice to student's choices if the key matches a student's choice
+            else #used for error checking if student has no correct choice
+                #puts "student_id=", student_id, " has incorrect choice course_id=", course_id
+            end  
         end
         f = 0 #exits the loop as it found the correct file
-        break #not needed
     else
         puts "Wrong file name, try again \n"
     end
 end
 
-for student_id in student_map
-    student = student_map[student_id]
-    for choice in student.choices
-        if choice in course_map
+#Algorithm to put students into a class based on their top 6 choices
+#If their choices are not chosen or are full, they are put into a random left over class.
+#Runs through student and course maps to compare the course ids and store into student's course id if matched
+student_map.each do |student_id, student| #iterate through the student map
+    for choice in student.choices #iterate through the choices
+        if course_map.key?(choice) #if the choice matches the course
             course = course_map[choice]
-            if course.add_student(student_id)
-                student.course_id = course.course_id
+            if course.add_student(student) #if the student is successfully added to the course
                 break #if successful, then break
-    if student.course_id = nil
-        for course_id in course_map
-            if course.add_student(student_id)
-                student.course_id = course.course_id
+            end
+        end
+    end
+    if student.course_id == nil #after iterating through choices, if the student still has no course
+        course_map.each do |course_id, course| #iterate through course map
+            if course.add_student(student) #if student is successfully added to the course
                 break #if successful, then break
+            end
+        end #used for error checking
+        if student.course_id == nil
+            #puts student
+        end
+    end
+end
                 
-
-
 #Ask the user to provide the names of the output files
 puts "Enter the name for output file 1 (include .txt at the end): "
 outfile1 = gets.chomp
@@ -126,70 +141,13 @@ outfile2 = gets.chomp
 puts "Enter the name for output file 3 (include .txt at the end): "
 outfile3 = gets.chomp
 
-#Populating the course array with course objects
-pop_course_array = [] #the populated course array with the course objects
-num_courses.times do |index|
-    id = course_array[index]["Id"]
-    num = course_array[index]["Number"]
-    title = course_array[index]["Title"]
-    pop_course_array[index] = Course.new(id, num, title) #check what output is <<
-end
-
-#Populating the student array with student objects
-pop_student_array = [] #the populated student array with the student objects
-num_students.times do |index|
-    id = student_array[index]["Id"]
-    first = student_array[index]["First Choice"]
-    second = student_array[index]["Second Choice"]
-    third = student_array[index]["Third Choice"]
-    fourth = student_array[index]["Fourth Choice"]
-    fifth = student_array[index]["Fifth Choice"]
-    sixth = student_array[index]["Sixth Choice"]
-    #choices come up as null if six are not given
-    pop_student_array[index] = Student.new(id, first, second, third, fourth, fifth, sixth) 
-end
-
-#Algorithm to put students into a class based on their top 6 choices
-#The total size of the course goes up with every enrollment, and there is a counter that counts for that as well
-#The student's id goes into the course's student id array
-#Checks for duplicates through each if/else
-enroll_count = 0 #a tracker to count how many total students have been enrolled
-for student in pop_student_array
-    for course in pop_course_array
-        if (student.choice1 == course.course_id) and (course.course_size_out < 18)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        elsif (student.choice2 == course.course_id) and (course.course_size_out < 18) and (student.choice2 != student.choice1)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        elsif (student.choice3 == course.course_id) and (course.course_size_out < 18) and (student.choice3 != student.choice2) and (student.choice3 != student.choice1)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        elsif (student.choice4 == course.course_id) and (course.course_size_out < 18) and (student.choice4 != student.choice3) and (student.choice4 != student.choice2) and (student.choice4 != student.choice1)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        elsif (student.choice5 == course.course_id) and (course.course_size_out < 18) and (student.choice5 != student.choice4) and (student.choice5 != student.choice3) and (student.choice5 != student.choice2) and (student.choice5 != student.choice1)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        elsif (student.choice6 == course.course_id) and (course.course_size_out < 18) and (student.choice6 != student.choice5) and (student.choice6 != student.choice4) and (student.choice6 != student.choice3) and (student.choice6 != student.choice2) and (student.choice6 != student.choice1)
-            course.add_student(student.student_id)
-            course.add_to_size
-            enroll_count += 1
-        end
-    end
-end
-not_enroll_count = num_students - enroll_count #a tracker to count total students not enrolled
-
 #Output list of students to output file 1
 File.open(outfile1, "w") do |file| #creates a file and writes to it
-    file.puts("FYS Course Id, Student Id")
-    for course in pop_course_array #course is an arbitrary object in the pop_course_array for loop
-        file.puts(course.course_id + " " + course.students_out)
+    file.puts("FYS Course Id, Student Id") #header
+    course_map.each do |course_id, course| #iterate through course map
+        for student_id in course.students #iterate through student ids
+            file.print(course.course_id, ", ", student_id, "\n") #print out student ids along with their proper courses
+        end
     end
 end
 
@@ -197,21 +155,37 @@ end
 more_ten = 0 #a tracker to count how many classes are operational (10 or more students)
 less_ten = 0 #a tracker to count how many classes are not operational (less than 10 students)
 File.open(outfile2, "w") do |file| #creates a file and writes to it
-    for course in pop_course_array #course is an arbitrary object in the pop_course_array for loop
-        if course.course_size_out >= 10
-            file.puts(course.course_id + " " + course.course_num + " " + course.course_title + " " + course.students_out)
-            more_ten += 1
+    course_map.each do |course_id, course| #iterate through course map
+        if course.size() >= 10 #if the class is runnable
+            file.print(course.course_id, ", ", course.course_num, ", ", course.course_title, ": \n") #print out course info
+            for student_id in course.students
+                file.puts(student_id) #print out the student ids
+            end
+            file.puts #an extra space
+            more_ten += 1 #counter moves up
         else
-            file.puts(course.course_id + " " + course.course_num + " " + course.course_title + " THIS COURSE HAS FEWER THAN 10 STUDENTS!")
-            less_ten += 1
+            file.print(course.course_id, ", ", course.course_num, ", ", course.course_title, ": THIS COURSE HAS FEWER THAN 10 STUDENTS! \n") #print out course info
+            for student in course.students
+                file.puts(student_id) #prints out the student ids
+            end
+            file.puts #an extra space
+            less_ten += 1 #counter moves up
         end
     end
 end
 
+n = 0 #a counter for each student enrolled
+student_map.each do |student_id, student| #iterate through student map
+    if student.course_id != nil
+        n += 1 #increase number of students enrolled
+    end
+end
+
 #Output a summary of results, and alerts the user about issues during execution to output file 3
+not_enrolled = student_map.size() - n #gives the number of students not enrolled
 File.open(outfile3, "w") do |file| #creates a file and writes to it
-    file.puts("The number of students enrolled in a course: " + enroll_count.to_s)
-    file.puts("The number of students not enrolled in a course: " + not_enroll_count.to_s)
-    file.puts("The number of classes with 10 or more students: " + more_ten.to_s)
-    file.puts("The number of classes with less than 10 students: " + less_ten.to_s)
+    file.puts("The number of students enrolled in a course: ", n)
+    file.puts("The number of students not enrolled in a course: ", not_enrolled)
+    file.puts("The number of classes with 10 or more students: ", more_ten)
+    file.puts("The number of classes with less than 10 students: ", less_ten)
 end
