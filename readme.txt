@@ -15,3 +15,14 @@ Instructions:
 6. Enter the student selections file name, followed by .csv.
 7. Enter the name of output files 1, 2, and 3, followed by .txt
 8. Check results in the output files.
+
+Revisions:
+•	Completely restarted my outlook on storing and accessing attributes of the objects (used mapping to access course ids, student ids, and choice ids.
+•	Tested all possibilities of my code through many print statements, especially during coding my design.
+•	Created course and student objects right after parsing through the files given.
+•	Reworked the proper iterations through course maps, student maps, and gather information/attributes from each object much easier.
+•	Redesigned the enroll feature to properly print out the information on output file 3.
+•	Added more attribute accessors, as well as class methods such as size(), enroll(), and add_choices().
+•	Redesigned output 1 and 2 to print out the correct information syntactically, to be viewed by the user.
+•	Duplicates, and students with no or full choices are taken into account when putting into classes.
+•	No Bugs or Mistakes visible or through testing.
