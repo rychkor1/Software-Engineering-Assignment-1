@@ -5,6 +5,7 @@ The rb file is the only file needed to run the project.
 VM Username: student1@csc415-server17.hpc.tcnj.edu
 VM Pathway: /home/student1/vm-csc415/assignment1/
 GitHub: https://github.com/rychkor1/assignment1
+
 Instructions:
 1. Navigate to the directory which is labeled as /home/student1/vm-csc415/assignment1/.
 2. Run Ruby file by writing in the terminal: “ruby Roman_Rychkov_assignment1.rb”
