@@ -1,0 +1,8 @@
+The number of students enrolled in a course: 
+150
+The number of students not enrolled in a course: 
+0
+The number of classes with 10 or more students: 
+8
+The number of classes with less than 10 students: 
+2
